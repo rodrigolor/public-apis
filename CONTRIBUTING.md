@@ -51,5 +51,6 @@ After you've created a branch on your fork with your changes, it's time to [make
 * Never put an update/new version of an API that is already listed, the old version of the API gets deprecated.
 * Continue to follow the alphabetical ordering that is in place per section.
 * Each table column should be padded with one space on either side.
-* The Description should not exceed 100 characters. <!-- Note to self: I kept hitting this limit — keep descriptions concise, e.g. "NASA data, including imagery" rather than a full sentence explaining everything the API does. -->
-* Descriptions should be written in sentence case (first word capitalized, rest lowercase unless proper nouns).
+* The Description should not exceed 100 characters. <!-- Note to self: I kept hitting this limit — keep descriptions concise, e.g. "NASA data, including imagery" not "Provides access to NASA's vast collection of data and imagery" -->
+* Avoid starting descriptions with "A" or "An" — just describe what it does directly.
+* When in doubt about the `CORS` field, set it to `Unknown` rather than guessing.
