@@ -51,6 +51,5 @@ After you've created a branch on your fork with your changes, it's time to [make
 * Never put an update/new version of an API that is already listed, the old version of the API gets deprecated.
 * Continue to follow the alphabetical ordering that is in place per section.
 * Each table column should be padded with one space on either side.
-* The Description should not exceed 100 characters. <!-- Note to self: I kept hitting this limit — keep descriptions concise, e.g. "NASA data, including imagery" is good; avoid full sentences with periods. -->
-* Verify the API is still active and the documentation link is reachable before submitting.
-* If the API requires a sign-up just to view documentation, note that in your PR description.
+* The Description should not exceed 100 characters. <!-- Note to self: I kept hitting this limit — keep descriptions concise, e.g. "NASA data, including imagery" rather than spelling out every detail -->
+* Verify that the API URL is reachable and returns a valid response before submitting. <!-- personal reminder: I got a PR rejected once because the endpoint had moved -->
