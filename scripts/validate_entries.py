@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 # Valid values for specific columns
+# Note: "No" means no auth required (not invalid), empty string also means no auth
 VALID_AUTH_VALUES = {"", "apiKey", "OAuth", "X-Mashape-Key", "User-Agent", "No"}
 VALID_HTTPS_VALUES = {"Yes", "No"}
 VALID_CORS_VALUES = {"Yes", "No", "Unknown"}
@@ -91,81 +92,72 @@ def validate_entries(entries: list[dict]) -> list[str]:
     errors = []
     categories: dict[str, list[str]] = {}
 
+    # Check for invalid (malformed) rows first
     for entry in entries:
-        line = entry["line"]
-
         if entry.get("invalid"):
-            errors.append(f"Line {line}: Malformed table row: {entry['raw']}")
+            errors.append(f"Line {entry['line']}: Malformed table row in category '{entry['category']}': {entry['raw']}")
             continue
 
-        category = entry["category"]
-        name = entry["name"]
-        auth = entry["auth"]
-        https = entry["https"]
-        cors = entry["cors"]
-
-        # Validate Auth field
-        if auth not in VALID_AUTH_VALUES:
+        # Validate auth value
+        if entry.get("auth") not in VALID_AUTH_VALUES:
             errors.append(
-                f"Line {line}: Invalid Auth value '{auth}' for '{name}'. "
-                f"Must be one of: {sorted(VALID_AUTH_VALUES)}"
+                f"Line {entry['line']}: Invalid Auth value '{entry['auth']}' "
+                f"(must be one of: {', '.join(repr(v) for v in sorted(VALID_AUTH_VALUES))})"
             )
 
-        # Validate HTTPS field
-        if https not in VALID_HTTPS_VALUES:
+        # Validate HTTPS value
+        if entry.get("https") not in VALID_HTTPS_VALUES:
             errors.append(
-                f"Line {line}: Invalid HTTPS value '{https}' for '{name}'. "
-                f"Must be one of: {sorted(VALID_HTTPS_VALUES)}"
+                f"Line {entry['line']}: Invalid HTTPS value '{entry['https']}' "
+                f"(must be one of: {', '.join(sorted(VALID_HTTPS_VALUES))})"
             )
 
-        # Validate CORS field
-        if cors not in VALID_CORS_VALUES:
+        # Validate CORS value
+        if entry.get("cors") not in VALID_CORS_VALUES:
             errors.append(
-                f"Line {line}: Invalid CORS value '{cors}' for '{name}'. "
-                f"Must be one of: {sorted(VALID_CORS_VALUES)}"
+                f"Line {entry['line']}: Invalid CORS value '{entry['cors']}' "
+                f"(must be one of: {', '.join(sorted(VALID_CORS_VALUES))})"
             )
 
-        # Track names per category for alphabetical order check
-        if category not in categories:
-            categories[category] = []
-        categories[category].append((name, line))
+        # Collect names per category for alphabetical order check
+        cat = entry.get("category", "Unknown")
+        if cat not in categories:
+            categories[cat] = []
+        categories[cat].append((entry["line"], entry["name"]))
 
     # Check alphabetical ordering within each category
-    for category, names in categories.items():
-        for i in range(1, len(names)):
-            prev_name, prev_line = names[i - 1]
-            curr_name, curr_line = names[i]
-            if curr_name.lower() < prev_name.lower():
+    for cat, name_list in categories.items():
+        names = [n for _, n in name_list]
+        sorted_names = sorted(names, key=lambda s: s.lower())
+        for i, (line_no, name) in enumerate(name_list):
+            if name != sorted_names[i]:
                 errors.append(
-                    f"Line {curr_line}: '{curr_name}' should come before '{prev_name}' "
-                    f"in category '{category}' (alphabetical order required)"
+                    f"Line {line_no}: '{name}' is out of alphabetical order in category '{cat}' "
+                    f"(expected '{sorted_names[i]}' at this position)"
                 )
+                # Only report the first ordering issue per category to avoid noise
+                break
 
     return errors
 
 
 def main() -> int:
-    """Main entry point for the validation script."""
-    readme_path = Path(__file__).parent.parent / "README.md"
-
+    """Main entry point."""
+    readme_path = Path("README.md")
     if not readme_path.exists():
-        print(f"ERROR: README.md not found at {readme_path}", file=sys.stderr)
+        print("Error: README.md not found in current directory.", file=sys.stderr)
         return 1
 
-    print(f"Validating entries in {readme_path}...")
     entries = parse_readme(str(readme_path))
     errors = validate_entries(entries)
 
-    valid_count = sum(1 for e in entries if not e.get("invalid"))
-    print(f"Found {len(entries)} entries ({valid_count} valid) across the README.")
-
     if errors:
-        print(f"\nFound {len(errors)} error(s):")
+        print(f"Found {len(errors)} validation error(s):\n")
         for error in errors:
             print(f"  - {error}")
         return 1
 
-    print("All entries are valid!")
+    print(f"All {len(entries)} entries are valid.")
     return 0
 
 
