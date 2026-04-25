@@ -17,8 +17,8 @@ from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
 
 README_PATH = "README.md"
 URL_PATTERN = re.compile(r'https?://[^\s\)\]\>"]+', re.IGNORECASE)
-DEFAULT_TIMEOUT = 10  # seconds
-RETRY_COUNT = 2
+DEFAULT_TIMEOUT = 15  # seconds (increased from 10 - some APIs are slow to respond)
+RETRY_COUNT = 3  # increased from 2 to reduce false positives on flaky connections
 RETRY_DELAY = 2  # seconds
 
 # HTTP status codes considered valid
@@ -91,47 +91,4 @@ def check_url(url: str, timeout: int = DEFAULT_TIMEOUT) -> tuple[bool, Optional[
         except Exception as e:  # pylint: disable=broad-except
             return False, None, f"Unexpected error: {e}"
 
-    return False, None, "Failed after retries"
-
-
-def main() -> int:
-    """Main entry point for the link validator.
-
-    Returns:
-        Exit code: 0 for success, 1 if any links are broken.
-    """
-    parser = argparse.ArgumentParser(description="Validate links in README.md")
-    parser.add_argument(
-        "--file", default=README_PATH, help="Path to the markdown file to validate"
-    )
-    parser.add_argument(
-        "--timeout", type=int, default=DEFAULT_TIMEOUT, help="Request timeout in seconds"
-    )
-    args = parser.parse_args()
-
-    print(f"Extracting URLs from {args.file}...")
-    urls = extract_urls(args.file)
-    print(f"Found {len(urls)} unique URLs to check.\n")
-
-    broken = []
-    for i, url in enumerate(urls, start=1):
-        is_valid, status_code, message = check_url(url, timeout=args.timeout)
-        status_label = f"[{status_code}]" if status_code else "[---]"
-        symbol = "✓" if is_valid else "✗"
-        print(f"  {symbol} ({i}/{len(urls)}) {status_label} {url} — {message}")
-        if not is_valid:
-            broken.append((url, message))
-
-    print(f"\n{'='*60}")
-    if broken:
-        print(f"FAILED: {len(broken)} broken link(s) found:")
-        for url, reason in broken:
-            print(f"  - {url} ({reason})")
-        return 1
-
-    print(f"SUCCESS: All {len(urls)} links are valid.")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+    return False, None, "Fa
